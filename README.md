@@ -2,7 +2,7 @@
 
 Une version web interactive, moderne et facile à consulter du Plan Comptable Général (PCG) français. Cet outil a été conçu pour les étudiants, les professionnels de la comptabilité et toute personne ayant besoin de naviguer rapidement dans la nomenclature des comptes.
 
-**[➡️ Accéder à la version en ligne](https://VOTRE-NOM-UTILISATEUR.github.io/NOM-DE-VOTRE-REPO/)**
+**[➡️ Accéder à la version en ligne](https://multibrasservices.github.io/pcg_2025/)**
 
 *(N'oubliez pas de remplacer le lien ci-dessus par l'URL de votre GitHub Page une fois déployée)*
 
