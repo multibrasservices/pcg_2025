@@ -160,6 +160,7 @@
   <input type="search" id="search-box" placeholder="Rechercher un compte...">
   <button id="expand-all">Tout déplier</button>
   <button id="collapse-all">Tout replier</button>
+  <span id="search-count"></span>
 </div>
 <div id="pcg-container">
   <h1>Plan Comptable Général (PCG) - Version Complète et Interactive</h1>
@@ -169,7 +170,7 @@
 </div>
 
 <script>
-// Votre structure de données reste inchangée
+// Structure de données PCG complète et mise à jour
 const pcgData = [
     {
         "numero": "1",
@@ -2079,7 +2080,15 @@ const pcgData = [
                     }
                 ]
             },
-            {"numero": "79", "label": "Transferts de charges"}
+            {
+                "numero": "79",
+                "label": "Transferts de charges (Comptes supprimés à compter du 01/01/2025)",
+                "comptes": [
+                    {"numero": "791", "label": "Transferts de charges d'exploitation"},
+                    {"numero": "796", "label": "Transferts de charges financières"},
+                    {"numero": "797", "label": "Transferts de charges exceptionnelles"}
+                ]
+            }
         ]
     },
     {
@@ -2126,10 +2135,8 @@ buildTree(pcgData, pcgTreeContainer);
 
 const allLiElements = Array.from(pcgTreeContainer.getElementsByTagName('li'));
 
-// Ajout d'un conteneur pour le compteur de résultats
-const searchCountSpan = document.createElement('span');
-searchCountSpan.id = 'search-count';
-document.querySelector('.controls').appendChild(searchCountSpan);
+// Récupération du compteur de résultats
+const searchCountSpan = document.getElementById('search-count');
 
 pcgTreeContainer.addEventListener('click', function(e) {
   let targetElement = e.target;
