@@ -4,7 +4,7 @@ Une version web interactive, moderne et facile à consulter du Plan Comptable G�
 
 **[➡️ Accéder à la version en ligne](https://multibrasservices.github.io/pcg_2025/)**
 
-*(N'oubliez pas de remplacer le lien ci-dessus par l'URL de votre GitHub Page une fois déployée)*
+
 
 
 
