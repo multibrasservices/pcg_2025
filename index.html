@@ -60,6 +60,25 @@
     border-radius: 5px;
     transition: background-color 0.2s;
   }
+  .level-control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px; /* Un petit espace entre les boutons et l'indicateur */
+  }
+  .level-buttons {
+    display: flex;
+    gap: 10px; /* L'espacement original entre les boutons */
+  }
+  #level-indicator {
+    font-size: 11px;
+    font-family: 'Menlo', 'Monaco', monospace;
+    color: #7f8c8d;
+    background-color: #eef2f5;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 500;
+  }
   .tree, .nested {
     list-style-type: none;
     padding-left: 25px;
@@ -157,9 +176,14 @@
 <body>
 
 <div class="controls">
+  <div class="level-control-group">
+    <div class="level-buttons">
+      <button id="expand-all">+</button>
+      <button id="collapse-all">-</button>
+    </div>
+    <div id="level-indicator">Niveau 1</div>
+  </div>
   <input type="search" id="search-box" placeholder="Rechercher un compte...">
-  <button id="expand-all">Tout déplier</button>
-  <button id="collapse-all">Tout replier</button>
   <span id="search-count"></span>
 </div>
 <div id="pcg-container">
@@ -2129,6 +2153,7 @@ const pcgTreeContainer = document.getElementById('pcg-tree');
 const searchBox = document.getElementById('search-box');
 const expandAllBtn = document.getElementById('expand-all');
 const collapseAllBtn = document.getElementById('collapse-all');
+const levelIndicator = document.getElementById('level-indicator');
 
 // Construire l'arbre HTML initial
 buildTree(pcgData, pcgTreeContainer);
@@ -2151,18 +2176,44 @@ pcgTreeContainer.addEventListener('click', function(e) {
   }
 });
 
-expandAllBtn.addEventListener('click', () => {
+// Logique pour le déploiement et repliement séquentiel niveau par niveau
+let currentExpandLevel = 0;
+const maxLevel = (() => {
+  let max = 0;
   allLiElements.forEach(li => {
-    if (li.classList.contains('parent')) {
-      li.classList.add('open');
+    const match = li.className.match(/level-(\d+)/);
+    if (match) {
+      const level = parseInt(match[1], 10);
+      if (level > max) {
+        max = level;
+      }
     }
   });
+  return max;
+})();
+
+expandAllBtn.addEventListener('click', () => {
+  // On ne peut pas dépasser le niveau de profondeur maximum
+  if (currentExpandLevel < maxLevel) {
+    currentExpandLevel++;
+    // On ouvre tous les parents du niveau courant
+    pcgTreeContainer.querySelectorAll(`.level-${currentExpandLevel}.parent`).forEach(p => {
+      p.classList.add('open');
+    });
+    levelIndicator.textContent = `Niveau ${currentExpandLevel + 1}`;
+  }
 });
 
 collapseAllBtn.addEventListener('click', () => {
-  allLiElements.forEach(li => {
-    li.classList.remove('open');
-  });
+  // On ne peut pas descendre en dessous du niveau 0
+  if (currentExpandLevel > 0) {
+    // On ferme tous les parents du niveau courant
+    pcgTreeContainer.querySelectorAll(`.level-${currentExpandLevel}.parent`).forEach(p => {
+      p.classList.remove('open');
+    });
+    currentExpandLevel--;
+    levelIndicator.textContent = `Niveau ${currentExpandLevel + 1}`;
+  }
 });
 
 const handleSearch = () => {
@@ -2214,6 +2265,166 @@ const handleSearch = () => {
 
 searchBox.addEventListener('input', handleSearch);
 </script>
+document.addEventListener('DOMContentLoaded', () => {
+    const treeContainer = document.getElementById('pcg-tree');
+    const searchBox = document.getElementById('search-box');
+    const searchCount = document.getElementById('search-count');
+    const expandAllBtn = document.getElementById('expand-all');
+    const collapseAllBtn = document.getElementById('collapse-all');
+    const toTopBtn = document.getElementById('to-top-btn');
+    const levelIndicator = document.getElementById('level-indicator');
+
+    let allParentNodes = [];
+
+    function buildTree(nodes, parentElement, level = 1) {
+        const ul = document.createElement('ul');
+        ul.className = level > 1 ? 'nested' : 'tree';
+
+        nodes.forEach(node => {
+            const li = document.createElement('li');
+            li.className = `level-${level}`;
+            
+            const contentSpan = document.createElement('span');
+            
+            const numeroSpan = document.createElement('span');
+            numeroSpan.className = 'numero';
+            numeroSpan.textContent = node.numero;
+            contentSpan.appendChild(numeroSpan);
+
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'label';
+            labelSpan.textContent = ` ${node.label}`; // Espace pour la séparation
+            contentSpan.appendChild(labelSpan);
+            
+            li.appendChild(contentSpan);
+
+            if (node.comptes && node.comptes.length > 0) {
+                li.classList.add('parent');
+                allParentNodes.push(li);
+                const nestedTree = buildTree(node.comptes, li, level + 1);
+                li.appendChild(nestedTree);
+            }
+            
+            parentElement.appendChild(li);
+        });
+
+        return ul;
+    }
+
+    // Initialiser l'arbre
+    buildTree(pcgData, treeContainer);
+
+    // Gestion du clic pour déplier/replier
+    treeContainer.addEventListener('click', (event) => {
+        let target = event.target;
+        // Remonter jusqu'à trouver le span parent ou le li.parent
+        while (target && !target.matches('.parent > span')) {
+            if (target === treeContainer) {
+                target = null;
+                break;
+            }
+            target = target.parentElement;
+        }
+
+        if (target) {
+            target.parentElement.classList.toggle('open');
+        }
+    });
+
+    // Contrôles globaux
+    expandAllBtn.addEventListener('click', () => {
+        allParentNodes.forEach(node => node.classList.add('open'));
+    });
+
+    collapseAllBtn.addEventListener('click', () => {
+        allParentNodes.forEach(node => node.classList.remove('open'));
+    });
+
+    // Fonction de recherche
+    function filterTree() {
+        const query = searchBox.value.toLowerCase().trim();
+        let count = 0;
+        const allNodes = treeContainer.querySelectorAll('li');
+
+        // Si la recherche est vide, tout réinitialiser
+        if (query === "") {
+            allNodes.forEach(node => {
+                node.style.display = "";
+                const label = node.querySelector('.label');
+                if (label) {
+                    label.innerHTML = label.textContent; // Enlève les <mark>
+                }
+            });
+            searchCount.textContent = "";
+            return;
+        }
+
+        allNodes.forEach(node => {
+            const nodeText = node.querySelector('span').textContent.toLowerCase();
+            const match = nodeText.includes(query);
+
+            if (match) {
+                node.style.display = "";
+                // Afficher tous les parents
+                let parent = node.parentElement;
+                while (parent && parent !== treeContainer) {
+                    if (parent.tagName === 'LI') {
+                        parent.style.display = "";
+                        parent.classList.add('open');
+                    }
+                    parent = parent.parentElement;
+                }
+                
+                // Surligner le texte
+                const label = node.querySelector('.label');
+                const numero = node.querySelector('.numero');
+                const originalText = `${numero.textContent} ${label.textContent}`;
+                const markedText = originalText.replace(new RegExp(query, 'gi'), (match) => `<mark>${match}</mark>`);
+                
+                // Pour éviter de marquer le numéro, on ré-assemble
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = markedText;
+                
+                // Cette partie est simplifiée. Une version plus robuste serait nécessaire
+                // pour ne pas altérer la structure HTML interne.
+                // Pour ce cas, on se contente de marquer le label.
+                const labelText = label.textContent;
+                label.innerHTML = labelText.replace(new RegExp(query, 'gi'), (match) => `<mark>${match}</mark>`);
+
+
+                if (!node.classList.contains('parent')) {
+                   count++;
+                }
+            } else {
+                node.style.display = "none";
+            }
+        });
+
+        searchCount.textContent = `${count} résultat(s)`;
+    }
+
+    searchBox.addEventListener('input', filterTree);
+
+    // Gestion du bouton "Retour en haut"
+    window.onscroll = () => {
+        if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+            toTopBtn.style.display = "block";
+            toTopBtn.style.opacity = "1";
+        } else {
+            toTopBtn.style.opacity = "0";
+            // Attendre la fin de la transition pour cacher
+            setTimeout(() => {
+              if (document.body.scrollTop < 100 && document.documentElement.scrollTop < 100) {
+                toTopBtn.style.display = "none";
+              }
+            }, 300);
+        }
+    };
+
+    toTopBtn.addEventListener('click', () => {
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+});
 
 <!-- Le bouton "Retour en haut" et son script -->
 <button id="to-top-btn" title="Retour en haut">▲</button>
